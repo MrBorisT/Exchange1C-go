@@ -1,4 +1,4 @@
-module github.com/MrBorisT/Exchange1CCom_golang
+module github.com/MrBorisT/Exchange1C-go
 
 go 1.18
 
