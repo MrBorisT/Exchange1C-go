@@ -202,6 +202,12 @@ func ReceiveSync(o1C *ole.IDispatch, code string) {
 }
 
 func SendSync(o1C *ole.IDispatch, code string) {
+	if fromCode, err := oleutil.CallMethod(o1C, "Eval1C", "ПланыОбмена."+viper.GetString("exchange_name")+".ЭтотУзел().Код"); err != nil {
+		log.Println("Не удалось получить код текущего узла:", err.Error(), "\r")
+	} else if checkIfExchangeExists(fromCode.Value().(string), code) {
+		log.Println("ИНФО: обмен из", fromCode.Value().(string), "в", code, "уже существует", "\r")
+		return
+	}
 	log.Println("Отправляем пакет", code, "\r")
 	command := "ПланыОбмена." + viper.GetString("exchange_name") + ".НайтиПоКоду(\"" + code + "\").ПолучитьОбъект().ЗаписатьИзменения()"
 	if _, err := oleutil.CallMethod(o1C, "Execute1C", command); err != nil {
@@ -236,4 +242,21 @@ func Cleanup() {
 		}
 	}
 	log.Println("Очистка прошла", "\r")
+}
+
+func checkIfExchangeExists(fromCode, toCode string) bool {
+	fpdb := viper.GetStringSlice("fpdb")
+	suffix := fromCode + "_" + toCode
+	for i := range fpdb {
+		if files, err := ioutil.ReadDir(fpdb[i]); err != nil {
+			log.Println("Проверка пакета: ошибка при доступе к папке ", fpdb[i], ":", err.Error(), "\r")
+		} else {
+			for _, file := range files {
+				if strings.Contains(file.Name(), suffix) && !file.IsDir() {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
